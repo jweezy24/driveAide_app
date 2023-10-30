@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import java.util.Collections;
 
@@ -31,8 +32,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Create TextureView
         textureView = new TextureView(this);
 
+        // Set layout parameters for the TextureView
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 2.0f);  // Using weight to occupy two-thirds of the screen
+        textureView.setLayoutParams(params);
+
+        // Create the main layout
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.addView(textureView);
@@ -47,6 +55,16 @@ public class MainActivity extends AppCompatActivity {
         } else {
             setUpCamera();
         }
+        // Create an EditText and set its layout parameters
+        EditText editText = new EditText(this);
+        LinearLayout.LayoutParams editTextParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1.0f);  // Using weight to occupy one-third of the screen
+        editText.setLayoutParams(editTextParams);
+        editText.setHint("Enter text here");
+
+// Add the EditText below the TextureView
+        layout.addView(editText);
+
     }
 
 
