@@ -20,7 +20,10 @@
         android:layout_height="0dp"
         android:layout_weight="1"
     android:background="#FFF"
-    android:hint="Enter text here"
     android:padding="8dp" />
+
+    <resources>
+        <dimen name="camera_bottom_padding">32dp</dimen> <!-- Adjust the value as needed -->
+    </resources>
 
 </LinearLayout>
