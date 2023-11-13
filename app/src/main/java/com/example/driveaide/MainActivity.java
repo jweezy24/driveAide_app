@@ -33,10 +33,17 @@ public class MainActivity extends AppCompatActivity {
 
         Button startDriveButton = findViewById(R.id.startDriveButton);
 
+        Button viewDriveSummaryButton = findViewById(R.id.viewDriveSummaryButton);
+
         // Set an onClickListener for the "Start Drive" button
         startDriveButton.setOnClickListener(v -> {
             // Start the camera activity when the button is clicked
             startActivity(new Intent(this, CameraActivity.class));
+        });
+
+        viewDriveSummaryButton.setOnClickListener(v -> {
+            // Start the camera activity when the button is clicked
+            startActivity(new Intent(this, DriveSummaryActivity.class));
         });
 
     }
