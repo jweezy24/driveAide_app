@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-feature android:name="android.hardware.camera" />
 
     <application
@@ -15,17 +16,21 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DriveAide"
         tools:targetApi="34">
-
+        <activity
+            android:name=".DriveSummaryActivity"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".CameraActivity"
+            android:exported="true"></activity>
     </application>
 
 </manifest>

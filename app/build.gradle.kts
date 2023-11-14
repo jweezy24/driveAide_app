@@ -1,10 +1,17 @@
 plugins {
     id("com.android.application")
+    id("com.chaquo.python") version "15.0.0"
 }
 
 android {
     namespace = "com.example.driveaide"
     compileSdk = 34
+
+    flavorDimensions += "pyVersion"
+//    productFlavors {
+        //create("py310") { dimension = "pyVersion" }
+//        create("py311") { dimension = "pyVersion" }
+//    }
 
     defaultConfig {
         applicationId = "com.example.driveaide"
@@ -14,6 +21,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters += listOf( "arm64-v8a", "x86_64")
+        }
+
     }
 
     buildTypes {
@@ -40,5 +51,26 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("androidx.activity:activity:+")
+    implementation("org.tensorflow:tensorflow-lite:+") // Replace with the latest version
+    implementation("org.pytorch:pytorch_android_lite:1.9.0") // Replace with the latest version
+    implementation("org.pytorch:pytorch_android_torchvision:1.9.0") // Replace with the latest version
+
+
+}
+chaquopy {
+//    productFlavors {
+//        //getByName("py310") { version = "3.10" }
+////        getByName("py311") { version = "3.11" }
+//    }
+
+    defaultConfig {
+        version = "3.8"
+        pip {
+            install("numpy")
+            // "-r"` followed by a requirements filename, relative to the
+            // project directory:
+            install("-r", "src/main/python/requirements.txt")
+        }
+    }
 
 }
