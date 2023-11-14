@@ -16,6 +16,8 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
@@ -24,6 +26,9 @@ import android.widget.Button;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.widget.LinearLayout;
 import android.content.Intent;
 import android.widget.EditText;
@@ -32,7 +37,11 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 
 import java.util.Collections;
@@ -47,6 +56,14 @@ private TextureView textureView;
     private int count = 0;
     private ImageView iv= null;
     private float[] global_bbox = null;
+    private RecyclerView confidenceView;        // the recycler view being displayed under the camera
+    private CustomRecyclerViewAdapter mAdapter; // the adapter for the recycler view
+    private HashMap<String, Double> mDataMap;      // a map of confidence values for each category
+    private List<ItemData> mDataList;               // a list of all distractions
+    private final Handler recyclerViewHandler = new Handler(Looper.getMainLooper());
+    private final int UPDATE_INTERVAL_MS = 10*1000; // 10 seconds x 1000 ms/1 second
+    private final double DISTRACTION_THRESHOLD = 0.5;       // the threshold to determine distraction
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,17 +89,21 @@ private TextureView textureView;
         iv.setLayoutParams(ivParams);
         layout.addView(iv);
 
-        // Request camera permission
 
-        // Create an EditText and set its layout parameters
-        EditText editText = new EditText(this);
-        LinearLayout.LayoutParams editTextParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 0.5f);  // Using weight to occupy one-third of the screen
-        editText.setLayoutParams(editTextParams);
-        editText.setHint("Enter text here");
 
-        // Add the EditText below the TextureView
-        layout.addView(editText);
+        mDataMap = new HashMap<>();
+        mDataList = new ArrayList<>();
+
+        // set up the recycler view
+        // confidenceView = findViewById(R.id.recyclerView);   // initialize recyclerView
+        RecyclerView rView = new RecyclerView(this);
+        confidenceView = rView;
+        mAdapter = new CustomRecyclerViewAdapter(mDataList, this);  // initialize adapter
+        confidenceView.setAdapter(mAdapter);    // link adapter
+        confidenceView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewHandler.postDelayed(updateTextViewRunnable, UPDATE_INTERVAL_MS);
+
+        layout.addView(confidenceView);
 
 
 
@@ -303,5 +324,67 @@ private TextureView textureView;
             e.printStackTrace();
         }
     }
+
+    // Runnable to update the RecyclerView at a specified interval.
+    private final Runnable updateTextViewRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // Returning early if mDataList is null.
+            if (mDataMap == null) {
+                return;
+            }
+
+            // Update list values shown
+            mDataMap = CameraActivity.this.fetchData();
+
+            // update the list used in the recyclerview
+            CameraActivity.this.updateList();
+
+            // Notifying the adapter that the data has changed, prompting it to update the RecyclerView.
+            mAdapter.notifyDataSetChanged();
+
+            // Rescheduling this Runnable to run again after the specified interval.
+            recyclerViewHandler.postDelayed(this, UPDATE_INTERVAL_MS);
+        }
+    };
+
+    // searches through a HashMap and returns a list of all pairs with values greater than a certain
+    // threshold.
+    private void updateList() {
+        mDataList.clear();
+        for (String model : MODEL_LIST) {
+            // access confidence value
+            double val = mDataMap.get(model);
+
+            // update the value in the list
+            if (val >= DISTRACTION_THRESHOLD) {
+                mDataList.add(new ItemData(model, String.format("%.6f", val)));
+            }
+        }
+    }
+
+
+    //*******************************************************************************************
+    // for testing purposes; true hashmap will be provided by models in final version
+    // Randomizes confidence levels for each model
+    private HashMap<String, Double> fetchData() {
+        HashMap<String, Double> map = new HashMap<String, Double>();
+        for (String model : MODEL_LIST) {
+            map.put(model, Math.random());
+        }
+        return map;
+    }
+
+    // for testing purposes; the true model list will be provided by models
+    private final String[] MODEL_LIST = {
+            "model A",
+            "model B",
+            "model C",
+            "model D",
+            "model E",
+            "model F",
+            "model G"
+    };
+    //*******************************************************************************************
 }
 
