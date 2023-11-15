@@ -54,6 +54,7 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite:+") // Replace with the latest version
     implementation("org.pytorch:pytorch_android_lite:1.9.0") // Replace with the latest version
     implementation("org.pytorch:pytorch_android_torchvision:1.9.0") // Replace with the latest version
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
 
 }

@@ -1,5 +1,6 @@
 package com.example.driveaide;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -10,10 +11,17 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
+
 import com.example.driveaide.R;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 public class DriveSummaryActivity extends AppCompatActivity {
 
@@ -27,6 +35,21 @@ public class DriveSummaryActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_drive_summary);
+
+        BarChart barChart = findViewById(R.id.barChart);
+
+        // Create dataset for the bar chart
+        List<BarEntry> entries = new ArrayList<>();
+        entries.add(new BarEntry(1f, 10f)); // Add entries in the form of new BarEntry(x, y)
+        entries.add(new BarEntry(2f, 20f)); // x is the position of the bar, y is the height
+
+        BarDataSet dataSet = new BarDataSet(entries, "Label"); // Add entries to dataset
+        dataSet.setColor(Color.RED); // Optional: customize dataset appearance
+
+        BarData barData = new BarData(dataSet);
+        barChart.setData(barData);
+        barChart.invalidate(); // refresh
+
 
         Spinner dateSpinner = findViewById(R.id.dateSpinner);
         statsTextView = findViewById(R.id.statsTextView);
