@@ -4,8 +4,11 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 
+import org.pytorch.IValue;
 import org.pytorch.LiteModuleLoader;
 import org.pytorch.Module;
+import org.pytorch.Tensor;
+import org.pytorch.torchvision.TensorImageUtils;
 import org.tensorflow.lite.Interpreter;
 
 import java.io.IOException;
@@ -15,14 +18,19 @@ import java.io.FileInputStream;
 import java.util.Vector;
 
 import android.content.res.AssetFileDescriptor;
+import android.util.Log;
 
 public class MLModelWrapper {
 
     private Module pytorchModel;
     private MTCNN tfliteModel;
 
+    private Context context;
+
     public MLModelWrapper(Context context, AssetManager assetmgr) {
 //        pytorchModel = loadPyTorchModel(context, "your_pytorch_model.ptl"); // Replace with your model file name
+        this.context = context;
+
         try{
             tfliteModel = new MTCNN(assetmgr);
         }catch (IOException e){
@@ -87,15 +95,35 @@ public class MLModelWrapper {
     }
 
     // Method to preprocess input data, run inference and process the output for PyTorch model
-    public void runPyTorchInference(Bitmap inputImage) {
-        // Preprocess inputImage to a format suitable for your PyTorch model
-        // ...
+    public void runPyTorchInference(Bitmap inputImage) throws IOException {
+        // Load the model (should be done only once, e.g., when the app starts)
+        Module model = Module.load(assetFilePath(this.context, "model_0.pt"));
+
+        Log.d("TORCH", "HERE");
+
+
+        // Preprocess the input image
+        Bitmap resizedImage = Bitmap.createScaledBitmap(inputImage, 448, 448, true);
+        final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(resizedImage,
+                TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
 
         // Run inference
-        // ...
+        final Tensor outputTensor = model.forward(IValue.from(inputTensor)).toTensor();
 
-        // Process and handle the output
-        // ...
+        // Process and handle the output (example for a classification model)
+        final float[] scores = outputTensor.getDataAsFloatArray();
+        int maxScoreIdx = -1;
+        float maxScore = -Float.MAX_VALUE;
+        for (int i = 0; i < scores.length; i++) {
+            if (scores[i] > maxScore) {
+                maxScore = scores[i];
+                maxScoreIdx = i;
+            }
+        }
+
+        // Handle the result (e.g., display the classification)
+//        String className = getClassLabel(maxScoreIdx); // Implement getClassLabel to map indices to class names
+//        displayInferenceResult(className); // Implement displayInferenceResult to handle the display of results
     }
 
     // Method to preprocess input data, run inference and process the output for TensorFlow Lite model
