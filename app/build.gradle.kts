@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("com.chaquo.python") version "15.0.0"
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -55,6 +56,8 @@ dependencies {
     implementation("org.pytorch:pytorch_android_lite:1.9.0") // Replace with the latest version
     implementation("org.pytorch:pytorch_android_torchvision:1.9.0") // Replace with the latest version
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation(platform("com.google.firebase:firebase-bom:32.6.0"))
+    implementation("com.google.firebase:firebase-database")
 
 
 }
