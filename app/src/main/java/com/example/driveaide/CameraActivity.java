@@ -96,12 +96,12 @@ private TextureView textureView;
 
         // set up the recycler view
         // confidenceView = findViewById(R.id.recyclerView);   // initialize recyclerView
-        RecyclerView rView = new RecyclerView(this);
-        confidenceView = rView;
+        confidenceView = new RecyclerView(this);
         mAdapter = new CustomRecyclerViewAdapter(mDataList, this);  // initialize adapter
         confidenceView.setAdapter(mAdapter);    // link adapter
         confidenceView.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewHandler.postDelayed(updateTextViewRunnable, UPDATE_INTERVAL_MS);
+        confidenceView.setBackgroundColor(Color.RED);
 
         layout.addView(confidenceView);
 

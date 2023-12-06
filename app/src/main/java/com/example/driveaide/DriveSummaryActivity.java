@@ -1,5 +1,6 @@
 package com.example.driveaide;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -27,6 +28,24 @@ public class DriveSummaryActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_drive_summary);
+
+        // fetch the viewDrive button
+        Button viewDriveButton = findViewById(R.id.view_map);
+
+        // Set an onClickListener for the "Start Drive" button
+        viewDriveButton.setOnClickListener(v -> {
+            // Start the camera activity when the button is clicked
+            startActivity(new Intent(this, MapActivity.class));
+        });
+
+        // fetch the viewDrive button
+        Button exitStats = findViewById(R.id.return_home);
+
+        // Set an onClickListener for the "Start Drive" button
+        exitStats.setOnClickListener(v -> {
+            // Start the camera activity when the button is clicked
+            startActivity(new Intent(this, MainActivity.class));
+        });
 
         Spinner dateSpinner = findViewById(R.id.dateSpinner);
         statsTextView = findViewById(R.id.statsTextView);
