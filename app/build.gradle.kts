@@ -52,8 +52,9 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("androidx.activity:activity:+")
     implementation("org.tensorflow:tensorflow-lite:+") // Replace with the latest version
-    implementation("org.pytorch:pytorch_android_lite:1.9.0") // Replace with the latest version
-    implementation("org.pytorch:pytorch_android_torchvision:1.9.0") // Replace with the latest version
+    implementation("org.pytorch:pytorch_android_lite:1.13.1") // Replace with the latest version
+//    implementation("org.pytorch:pytorch_android:1.9.0") // Replace with the latest version
+    implementation("org.pytorch:pytorch_android_torchvision_lite:1.13.1") // Replace with the latest version
 
 
 }
@@ -69,7 +70,7 @@ chaquopy {
             install("numpy")
             // "-r"` followed by a requirements filename, relative to the
             // project directory:
-            install("-r", "src/main/python/requirements.txt")
+//            install("-r", "src/main/python/requirements.txt")
         }
     }
 

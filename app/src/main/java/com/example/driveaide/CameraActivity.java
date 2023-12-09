@@ -38,13 +38,16 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import java.util.Collections;
+import java.util.concurrent.ExecutionException;
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -55,6 +58,8 @@ private TextureView textureView;
     private MLModelWrapper mlModelWrapper;
     private int count = 0;
     private ImageView iv= null;
+    //Thread lock
+    private Object lock = new Object();
     private float[] global_bbox = null;
     private RecyclerView confidenceView;        // the recycler view being displayed under the camera
     private CustomRecyclerViewAdapter mAdapter; // the adapter for the recycler view
@@ -63,6 +68,10 @@ private TextureView textureView;
     private final Handler recyclerViewHandler = new Handler(Looper.getMainLooper());
     private final int UPDATE_INTERVAL_MS = 10*1000; // 10 seconds x 1000 ms/1 second
     private final double DISTRACTION_THRESHOLD = 0.5;       // the threshold to determine distraction
+
+    private Map<String, Float> model_results = null;
+
+    private ArrayList<Bitmap> frame_cache = new ArrayList<>(3);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,7 +124,11 @@ private TextureView textureView;
 
         setContentView(layout);
         AssetManager asstmgr = this.getAssets();
-        mlModelWrapper = new MLModelWrapper(this,asstmgr);
+        try {
+            mlModelWrapper = new MLModelWrapper(this,asstmgr);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -140,7 +153,9 @@ private TextureView textureView;
         @Override
         public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
             if(count%10 == 0) {
-                processAndDisplayImage();
+                synchronized (lock){
+                    processAndDisplayImage();
+                }
             }
             count+=1;
         }
@@ -272,24 +287,55 @@ private TextureView textureView;
         Bitmap bitmap = getBitmapFromTextureView(textureView);
         if (bitmap != null) {
             new Thread(() -> {
-                new Thread(() -> {
-                    Vector<Box> bb = mlModelWrapper.runTensorFlowLiteInference(bitmap);
-                    if (bb.size() > 0) {
-                        float[] boundingBoxes = mlModelWrapper.runTensorFlowLiteInference(bitmap).firstElement().getBbr();
-                        global_bbox = boundingBoxes;
-                        // Create a transparent bitmap
-//                        Bitmap overlayBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-//                        overlayBitmap.eraseColor(Color.TRANSPARENT); // Make it transparent
+                synchronized (lock){
+                Vector<Box> bb = mlModelWrapper.runTensorFlowLiteInference(bitmap);
+                if (bb.size() > 0) {
+                    float[] boundingBoxes = mlModelWrapper.runTensorFlowLiteInference(bitmap).firstElement().getBbr();
+                    global_bbox = boundingBoxes;
+
+                    int x = Math.max((int) boundingBoxes[1], 0);
+                    int y = Math.max((int) boundingBoxes[0], 0);
+                    int width = Math.min((int) (boundingBoxes[3] - boundingBoxes[1]), bitmap.getWidth() - x);
+                    int height = Math.min((int) (boundingBoxes[2] - boundingBoxes[0]), bitmap.getHeight() - y);
+
+                    // Ensure the width and height are positive
+                    width = Math.max(width, 0);
+                    height = Math.max(height, 0);
+
+                    // Check if the bounding box is within the bitmap dimensions
+                    if (x + width <= bitmap.getWidth() && y + height <= bitmap.getHeight()) {
+                        Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
+
+                        if (this.frame_cache.size() < 3){
+                            this.frame_cache.add(croppedBitmap);
+                        }else if(this.frame_cache.size() == 3){
+                            mlModelWrapper.add_video_to_video_cache(this.frame_cache);
+                            this.frame_cache.clear();
+                        }
+
+                        if(mlModelWrapper.inference_ready()) {
+                            try {
+
+                                Map<String, Float> reses =  mlModelWrapper.runPyTorchInference();
+                                Log.d("Results",reses.toString());
+                                this.model_results = reses;
+                            }catch (ExecutionException e) {
+                                throw new RuntimeException(e);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                         logBoundingBoxes(boundingBoxes);
-                        // Draw bounding boxes on this transparent bit
+                        drawBoundingBoxes(bitmap, boundingBoxes);
 
-                        drawBoundingBoxes(bitmap,boundingBoxes);
+                        // Now, you can use croppedBitmap for further processing or display
                     }
-                }).start();
-
+                }
+                }//thread
             }).start();
         }
     }
+
 
     private void startPreview() {
         try {
@@ -329,14 +375,6 @@ private TextureView textureView;
     private final Runnable updateTextViewRunnable = new Runnable() {
         @Override
         public void run() {
-            // Returning early if mDataList is null.
-            if (mDataMap == null) {
-                return;
-            }
-
-            // Update list values shown
-            mDataMap = CameraActivity.this.fetchData();
-
             // update the list used in the recyclerview
             CameraActivity.this.updateList();
 
@@ -352,39 +390,19 @@ private TextureView textureView;
     // threshold.
     private void updateList() {
         mDataList.clear();
-        for (String model : MODEL_LIST) {
-            // access confidence value
-            double val = mDataMap.get(model);
+        if(model_results != null){
+            for (String model : model_results.keySet()) {
+                // access confidence value
+                float val = model_results.get(model);
 
-            // update the value in the list
-            if (val >= DISTRACTION_THRESHOLD) {
-                mDataList.add(new ItemData(model, String.format("%.6f", val)));
+                // update the value in the list
+                if (val >= DISTRACTION_THRESHOLD) {
+                    mDataList.add(new ItemData(model, String.format("%.6f", val)));
+                }
             }
         }
     }
 
 
-    //*******************************************************************************************
-    // for testing purposes; true hashmap will be provided by models in final version
-    // Randomizes confidence levels for each model
-    private HashMap<String, Double> fetchData() {
-        HashMap<String, Double> map = new HashMap<String, Double>();
-        for (String model : MODEL_LIST) {
-            map.put(model, Math.random());
-        }
-        return map;
-    }
-
-    // for testing purposes; the true model list will be provided by models
-    private final String[] MODEL_LIST = {
-            "model A",
-            "model B",
-            "model C",
-            "model D",
-            "model E",
-            "model F",
-            "model G"
-    };
-    //*******************************************************************************************
 }
 
