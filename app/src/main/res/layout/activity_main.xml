@@ -1,29 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    tools:ignore="ExtraText">
+    android:orientation="vertical">
 
+    <!-- TextureView for video or camera preview -->
     <TextureView
         android:id="@+id/textureView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="2"
-        android:background="#000" />
-
-    <EditText
-        android:id="@+id/editText"
-        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-    android:background="#FFF"
-    android:padding="8dp" />
+        />
 
-    <resources>
-        <dimen name="camera_bottom_padding">32dp</dimen> <!-- Adjust the value as needed -->
-    </resources>
+    <!-- ScrollView to contain RecyclerView -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
+        <!-- LinearLayout within ScrollView to hold RecyclerView -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#FFFFFFFF"
+                />
+            <!-- Add other views or widgets within the ScrollView here as needed -->
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

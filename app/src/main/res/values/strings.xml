@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">DriveAide</string>
+    <string name="select_date">Select Date</string>
 </resources>

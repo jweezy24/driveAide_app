@@ -3,6 +3,11 @@ package com.example.driveaide;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -11,6 +16,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
@@ -33,10 +39,17 @@ public class MainActivity extends AppCompatActivity {
 
         Button startDriveButton = findViewById(R.id.startDriveButton);
 
+        Button viewDriveSummaryButton = findViewById(R.id.viewDriveSummaryButton);
+
         // Set an onClickListener for the "Start Drive" button
         startDriveButton.setOnClickListener(v -> {
             // Start the camera activity when the button is clicked
             startActivity(new Intent(this, CameraActivity.class));
+        });
+
+        viewDriveSummaryButton.setOnClickListener(v -> {
+            // Start the camera activity when the button is clicked
+            startActivity(new Intent(this, DriveSummaryActivity.class));
         });
 
     }
