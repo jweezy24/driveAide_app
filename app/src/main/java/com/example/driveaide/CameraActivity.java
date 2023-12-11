@@ -49,6 +49,14 @@ import java.util.Vector;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
+import android.app.AlertDialog;
+import android.media.MediaPlayer;
+import android.view.View;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+import java.util.Calendar;
+
 public class CameraActivity extends AppCompatActivity {
 
 private TextureView textureView;
@@ -68,10 +76,14 @@ private TextureView textureView;
     private final Handler recyclerViewHandler = new Handler(Looper.getMainLooper());
     private final int UPDATE_INTERVAL_MS = 10*1000; // 10 seconds x 1000 ms/1 second
     private final double DISTRACTION_THRESHOLD = 0.5;       // the threshold to determine distraction
+    private static final String MODEL_E = "model E";
+    private MediaPlayer mediaPlayer; // to play sound
+    private Button btnEndDrive; // button that ends drive
 
     private Map<String, Float> model_results = null;
 
     private ArrayList<Bitmap> frame_cache = new ArrayList<>(3);
+    private Map<String, Float> reses;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +100,15 @@ private TextureView textureView;
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.addView(textureView);
+        btnEndDrive = new Button(this);
+        layout.addView(btnEndDrive);
+        btnEndDrive.setText("End Drive");
+        btnEndDrive.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                endDrive(view);
+            }
+        });
 
 
         textureView.setSurfaceTextureListener(surfaceTextureListener);
@@ -316,7 +337,7 @@ private TextureView textureView;
                         if(mlModelWrapper.inference_ready()) {
                             try {
 
-                                Map<String, Float> reses =  mlModelWrapper.runPyTorchInference();
+                                reses =  mlModelWrapper.runPyTorchInference();
                                 Log.d("Results",reses.toString());
                                 this.model_results = reses;
                             }catch (ExecutionException e) {
@@ -386,6 +407,65 @@ private TextureView textureView;
         }
     };
 
+    private void showAlertAndSound() {
+        // Show an alert indicating dangerous action
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Alert")
+                .setMessage("Driver looking off road!");
+        AlertDialog alert = builder.create();
+        alert.show();
+
+        // only shows up for 5 seconds
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (alert.isShowing()) {
+                    alert.dismiss();
+                }
+            }
+        }, 5000);
+
+        // Play alert sound
+        playAlertSound();
+    }
+
+    private void playAlertSound() {
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer.create(this, R.raw.driveaide_alert);
+        }
+
+        if (!mediaPlayer.isPlaying()) {
+            mediaPlayer.start();
+        }
+
+        // to stop playing sound after 5 seconds
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                    mediaPlayer.release();
+                    mediaPlayer = null;
+                }
+            }
+        }, 5000);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
+    public void endDrive(View view) {
+        Intent intent = new Intent(this, DriveSummaryActivity.class);
+        startActivity(intent);
+    }
+
     // searches through a HashMap and returns a list of all pairs with values greater than a certain
     // threshold.
     private void updateList() {
@@ -398,6 +478,10 @@ private TextureView textureView;
                 // update the value in the list
                 if (val >= DISTRACTION_THRESHOLD) {
                     mDataList.add(new ItemData(model, String.format("%.6f", val)));
+                }
+                if (model.equals("gaze_on_road-not_looking_road") && val >= DISTRACTION_THRESHOLD) {
+                    Log.d("!!!!!!!!!", String.valueOf(reses.get("gaze_on_road-not_looking_road")));
+                    showAlertAndSound();
                 }
             }
         }

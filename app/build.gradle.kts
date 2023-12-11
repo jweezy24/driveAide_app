@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    id("com.chaquo.python") version "15.0.0"
+//    id("com.chaquo.python") version "15.0.0"
 }
 
 android {
@@ -58,20 +58,20 @@ dependencies {
 
 
 }
-chaquopy {
-//    productFlavors {
-//        //getByName("py310") { version = "3.10" }
-////        getByName("py311") { version = "3.11" }
+//chaquopy {
+////    productFlavors {
+////        //getByName("py310") { version = "3.10" }
+//////        getByName("py311") { version = "3.11" }
+////    }
+//
+//    defaultConfig {
+//        version = "3.8"
+//        pip {
+//            install("numpy")
+//            // "-r"` followed by a requirements filename, relative to the
+//            // project directory:
+////            install("-r", "src/main/python/requirements.txt")
+//        }
 //    }
-
-    defaultConfig {
-        version = "3.8"
-        pip {
-            install("numpy")
-            // "-r"` followed by a requirements filename, relative to the
-            // project directory:
-//            install("-r", "src/main/python/requirements.txt")
-        }
-    }
-
-}
+//
+//}
