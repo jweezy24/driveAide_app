@@ -173,7 +173,7 @@ private TextureView textureView;
 
         @Override
         public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-            if(count%10 == 0) {
+            if(count%20 == 0) {
                 synchronized (lock){
                     processAndDisplayImage();
                 }
@@ -243,7 +243,9 @@ private TextureView textureView;
             // Run the inference in a background thread
             new Thread(() -> {
                 // Replace 'runTensorFlowLiteInference' with the appropriate method name
-                mlModelWrapper.runTensorFlowLiteInference(bitmap);
+                synchronized (lock) {
+                    mlModelWrapper.runTensorFlowLiteInference(bitmap);
+                }
                 // Handle the result, e.g., display the processed bitmap or bounding boxes
                 // Remember to switch back to the main thread if updating UI
             }).start();
@@ -347,7 +349,7 @@ private TextureView textureView;
                             }
                         }
                         logBoundingBoxes(boundingBoxes);
-                        drawBoundingBoxes(bitmap, boundingBoxes);
+//                        drawBoundingBoxes(bitmap, boundingBoxes);
 
                         // Now, you can use croppedBitmap for further processing or display
                     }
@@ -476,7 +478,7 @@ private TextureView textureView;
                 float val = model_results.get(model);
 
                 // update the value in the list
-                if (val >= DISTRACTION_THRESHOLD) {
+                if (val >= 0) {
                     mDataList.add(new ItemData(model, String.format("%.6f", val)));
                 }
                 if (model.equals("gaze_on_road-not_looking_road") && val >= DISTRACTION_THRESHOLD) {

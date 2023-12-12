@@ -153,7 +153,7 @@ public class MLModelWrapper {
     }
 
     public boolean inference_ready(){
-        if(this.current_index >= 18063359){
+        if(this.current_index >= 1806335){
             return true;
         }
         return false;
@@ -228,7 +228,7 @@ public class MLModelWrapper {
                 final float[] scores = predictions.getDataAsFloatArray();
                 int maxScoreIdx = -1;
                 float maxScore = -Float.MAX_VALUE;
-                for (int j = 0; j < scores.length; j++) {
+                for (int j = 0; j < 1; j++) {
                     if (scores[j] > maxScore) {
                         maxScore = scores[j];
                         maxScoreIdx = j;
