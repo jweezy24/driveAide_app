@@ -15,6 +15,9 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -38,6 +41,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,9 +65,12 @@ private TextureView textureView;
     private CustomRecyclerViewAdapter mAdapter; // the adapter for the recycler view
     private HashMap<String, Double> mDataMap;      // a map of confidence values for each category
     private List<ItemData> mDataList;               // a list of all distractions
+    private List<LatLng> locations;                 // a list of all logged coordinates
     private final Handler recyclerViewHandler = new Handler(Looper.getMainLooper());
-    private final int UPDATE_INTERVAL_MS = 10*1000; // 10 seconds x 1000 ms/1 second
+    private final int UPDATE_RECYCLER_VIEW_INTERVAL_MS = 10*1000; // 10 seconds x 1000 ms/1 second
     private final double DISTRACTION_THRESHOLD = 0.5;       // the threshold to determine distraction
+    private LocationManager locationManager;
+    private LocationListener locationListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,11 +108,10 @@ private TextureView textureView;
         mAdapter = new CustomRecyclerViewAdapter(mDataList, this);  // initialize adapter
         confidenceView.setAdapter(mAdapter);    // link adapter
         confidenceView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerViewHandler.postDelayed(updateTextViewRunnable, UPDATE_INTERVAL_MS);
+        recyclerViewHandler.postDelayed(updateTextViewRunnable, UPDATE_RECYCLER_VIEW_INTERVAL_MS);
         confidenceView.setBackgroundColor(Color.RED);
 
         layout.addView(confidenceView);
-
 
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -116,6 +123,19 @@ private TextureView textureView;
         setContentView(layout);
         AssetManager asstmgr = this.getAssets();
         mlModelWrapper = new MLModelWrapper(this,asstmgr);
+
+        // begin logging location
+        locations = new ArrayList<LatLng>();
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationListener = new LocationListener() {
+            public void onLocationChanged(Location location) {
+                // Add location to locations list
+                locations.add(new LatLng(location.getLatitude(), location.getLongitude()));
+            }
+        };
+
+        // Request location updates
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
 
     }
 
@@ -344,7 +364,7 @@ private TextureView textureView;
             mAdapter.notifyDataSetChanged();
 
             // Rescheduling this Runnable to run again after the specified interval.
-            recyclerViewHandler.postDelayed(this, UPDATE_INTERVAL_MS);
+            recyclerViewHandler.postDelayed(this, UPDATE_RECYCLER_VIEW_INTERVAL_MS);
         }
     };
 
@@ -361,6 +381,13 @@ private TextureView textureView;
                 mDataList.add(new ItemData(model, String.format("%.6f", val)));
             }
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        locationManager.removeUpdates(locationListener);
+        recyclerViewHandler.removeCallbacks(updateTextViewRunnable);
     }
 
 
