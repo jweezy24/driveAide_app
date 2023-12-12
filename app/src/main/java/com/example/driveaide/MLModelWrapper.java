@@ -43,7 +43,7 @@ public class MLModelWrapper {
     private Context context;
 
     private Tensor[] input_cache = new Tensor[10];
-    float[] batchData = new float[10 * 3 * 3 * 448 * 448];
+    float[] batchData = new float[1 * 3 * 3 * 448 * 448];
 
     private int current_index = 0;
 
@@ -213,7 +213,7 @@ public class MLModelWrapper {
 
     // Method to preprocess input data, run inference and process the output for PyTorch model
     public Map<String, Float> runPyTorchInference() throws InterruptedException, ExecutionException {
-        Tensor input = Tensor.fromBlob(this.batchData, new long[]{10, 3, 3, 448, 448});
+        Tensor input = Tensor.fromBlob(this.batchData, new long[]{1, 3, 3, 448, 448});
 
         ExecutorService executor = Executors.newFixedThreadPool(this.models.size()); // Create a thread pool
         List<Future<Map.Entry<String, Float>>> futures = new ArrayList<>();
@@ -232,6 +232,7 @@ public class MLModelWrapper {
                     if (scores[j] > maxScore) {
                         maxScore = scores[j];
                         maxScoreIdx = j;
+                        Log.d("Results", String.valueOf(scores[j]));
                     }
                 }
 
@@ -253,11 +254,11 @@ public class MLModelWrapper {
     // Method to preprocess input data, run inference and process the output for TensorFlow Lite model
     public Vector<Box> runTensorFlowLiteInference(Bitmap inputImage) {
 
-        float[][][][] preprocessedImage = preprocessImage(inputImage);
+//        float[][][][] preprocessedImage = preprocessImage(inputImage);
 
 
         // Run inference
-        float[][] output = new float[1][512]; // Adjust size as per model's output
+//        float[][] output = new float[1][512]; // Adjust size as per model's output
         Vector<Box> bbox = tfliteModel.detectFaces(inputImage, 128);
 
         return bbox;

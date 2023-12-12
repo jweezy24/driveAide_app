@@ -56,7 +56,6 @@ dependencies {
 //    implementation("org.pytorch:pytorch_android:1.9.0") // Replace with the latest version
     implementation("org.pytorch:pytorch_android_torchvision_lite:1.13.1") // Replace with the latest version
 
-
 }
 //chaquopy {
 ////    productFlavors {

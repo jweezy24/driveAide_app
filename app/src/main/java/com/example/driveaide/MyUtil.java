@@ -187,6 +187,19 @@ public class MyUtil {
         return normalizeImage(croped);
     }
 
+    public static Bitmap cropAndResizeBitmap(Bitmap bitmap, Box box, int size) {
+        // crop and resize
+        Matrix matrix = new Matrix();
+        float scaleW = 1.0f * size / box.width();
+        float scaleH = 1.0f * size / box.height();
+        matrix.postScale(scaleW, scaleH);
+        Rect rect = box.transform2Rect();
+        Bitmap croped = Bitmap.createBitmap(
+                bitmap, rect.left, rect.top, box.width(), box.height(), matrix, true);
+
+        return croped;
+    }
+
     /**
      * 按照rect的大小裁剪出人脸
      * @param bitmap

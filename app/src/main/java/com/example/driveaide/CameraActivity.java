@@ -1,6 +1,7 @@
 package com.example.driveaide;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
@@ -15,15 +16,18 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
+import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Button;
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -74,7 +78,7 @@ private TextureView textureView;
     private HashMap<String, Double> mDataMap;      // a map of confidence values for each category
     private List<ItemData> mDataList;               // a list of all distractions
     private final Handler recyclerViewHandler = new Handler(Looper.getMainLooper());
-    private final int UPDATE_INTERVAL_MS = 10*1000; // 10 seconds x 1000 ms/1 second
+    private final int UPDATE_INTERVAL_MS = 10*100; // 10 seconds x 1000 ms/1 second
     private final double DISTRACTION_THRESHOLD = 0.5;       // the threshold to determine distraction
     private static final String MODEL_E = "model E";
     private MediaPlayer mediaPlayer; // to play sound
@@ -84,6 +88,7 @@ private TextureView textureView;
 
     private ArrayList<Bitmap> frame_cache = new ArrayList<>(3);
     private Map<String, Float> reses;
+    private int degrees=0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -154,6 +159,7 @@ private TextureView textureView;
     }
 
 
+
     private final TextureView.SurfaceTextureListener surfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
@@ -173,7 +179,7 @@ private TextureView textureView;
 
         @Override
         public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-            if(count%20 == 0) {
+            if(count%3 == 0) {
                 synchronized (lock){
                     processAndDisplayImage();
                 }
@@ -188,6 +194,8 @@ private TextureView textureView;
         try {
             for (String cameraId : cameraManager.getCameraIdList()) {
                 CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
+
+
                 if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
                     this.cameraId = cameraId;
                     previewSize = new Size(textureView.getWidth(), textureView.getHeight());
@@ -245,6 +253,7 @@ private TextureView textureView;
                 // Replace 'runTensorFlowLiteInference' with the appropriate method name
                 synchronized (lock) {
                     mlModelWrapper.runTensorFlowLiteInference(bitmap);
+
                 }
                 // Handle the result, e.g., display the processed bitmap or bounding boxes
                 // Remember to switch back to the main thread if updating UI
@@ -262,7 +271,7 @@ private TextureView textureView;
 
 
         // Assuming the box contains [top, left, bottom, right] coordinates
-        canvas.drawRect(boundingBoxes[1], boundingBoxes[0], boundingBoxes[3], boundingBoxes[2], paint);
+//        canvas.drawRect(boundingBoxes[1], boundingBoxes[0], boundingBoxes[3], boundingBoxes[2], paint);
         runOnUiThread(() ->{
             iv.setImageBitmap(mutableBitmap);
         });
@@ -306,14 +315,19 @@ private TextureView textureView;
         Log.d("BoundingBoxes", sb.toString());
     }
 
+
+
+
     private void processAndDisplayImage() {
         Bitmap bitmap = getBitmapFromTextureView(textureView);
         if (bitmap != null) {
             new Thread(() -> {
                 synchronized (lock){
                 Vector<Box> bb = mlModelWrapper.runTensorFlowLiteInference(bitmap);
+
+
                 if (bb.size() > 0) {
-                    float[] boundingBoxes = mlModelWrapper.runTensorFlowLiteInference(bitmap).firstElement().getBbr();
+                    float[] boundingBoxes = bb.firstElement().getBbr();
                     global_bbox = boundingBoxes;
 
                     int x = Math.max((int) boundingBoxes[1], 0);
@@ -327,7 +341,12 @@ private TextureView textureView;
 
                     // Check if the bounding box is within the bitmap dimensions
                     if (x + width <= bitmap.getWidth() && y + height <= bitmap.getHeight()) {
-                        Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
+                        Bitmap croppedBitmap = null;
+                        try{
+                            croppedBitmap = MyUtil.cropAndResizeBitmap(bitmap, bb.firstElement(), 448);
+                        }catch (Exception e){
+                            croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
+                        }
 
                         if (this.frame_cache.size() < 3){
                             this.frame_cache.add(croppedBitmap);
@@ -349,7 +368,7 @@ private TextureView textureView;
                             }
                         }
                         logBoundingBoxes(boundingBoxes);
-//                        drawBoundingBoxes(bitmap, boundingBoxes);
+                        drawBoundingBoxes(croppedBitmap, boundingBoxes);
 
                         // Now, you can use croppedBitmap for further processing or display
                     }
@@ -432,9 +451,9 @@ private TextureView textureView;
     }
 
     private void playAlertSound() {
-        if (mediaPlayer == null) {
-            mediaPlayer = MediaPlayer.create(this, R.raw.driveaide_alert);
-        }
+//        if (mediaPlayer == null) {
+//            mediaPlayer = MediaPlayer.create(this, R.raw.driveaide_alert);
+//        }
 
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.start();
@@ -476,14 +495,13 @@ private TextureView textureView;
             for (String model : model_results.keySet()) {
                 // access confidence value
                 float val = model_results.get(model);
-
                 // update the value in the list
                 if (val >= 0) {
                     mDataList.add(new ItemData(model, String.format("%.6f", val)));
                 }
                 if (model.equals("gaze_on_road-not_looking_road") && val >= DISTRACTION_THRESHOLD) {
                     Log.d("!!!!!!!!!", String.valueOf(reses.get("gaze_on_road-not_looking_road")));
-                    showAlertAndSound();
+//                    showAlertAndSound();
                 }
             }
         }
