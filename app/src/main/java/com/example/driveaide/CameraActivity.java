@@ -36,6 +36,17 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.widget.LinearLayout;
+import android.widget.ImageView;
+
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Vector;
 import android.content.Intent;
 import android.widget.EditText;
 import android.view.ViewGroup;
@@ -130,6 +141,59 @@ private TextureView textureView;
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 0.5f);
         iv.setLayoutParams(ivParams);
         layout.addView(iv);
+
+
+
+        mDataMap = new HashMap<>();
+        mDataList = new ArrayList<>();
+
+        // set up the recycler view
+        // confidenceView = findViewById(R.id.recyclerView);   // initialize recyclerView
+        RecyclerView rView = new RecyclerView(this);
+        confidenceView = rView;
+        mAdapter = new CustomRecyclerViewAdapter(mDataList, this);  // initialize adapter
+        confidenceView.setAdapter(mAdapter);    // link adapter
+        confidenceView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewHandler.postDelayed(updateTextViewRunnable, UPDATE_INTERVAL_MS);
+
+        layout.addView(confidenceView);
+
+
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 1);
+        } else {
+            setUpCamera();
+        }
+
+        setContentView(layout);
+        AssetManager asstmgr = this.getAssets();
+        mlModelWrapper = new MLModelWrapper(this,asstmgr);
+
+
+        ////////// FIREBASE EXAMPLE CODE ///////////
+
+        // Initialize Firebase Database
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("drives");
+
+        // Prepare your driving events data
+        Map<String, Integer> drivingEvents = new HashMap<>();
+        drivingEvents.put("event1", 95); // replace with actual event IDs and confidence values
+        drivingEvents.put("event2", 88);
+        // ... add other events
+
+        // Prepare your data
+        Map<String, Object> driveData = new HashMap<>();
+        driveData.put("driveNumber", 123); // replace with actual drive number
+        driveData.put("dateTime", "2023-12-05 15:00:00"); // replace with actual date/time
+        driveData.put("latitude", 40.7128); // replace with actual latitude
+        driveData.put("longitude", -74.0060); // replace with actual longitude
+        driveData.put("drivingEvents", drivingEvents);
+
+        // Push data to Firebase Database
+        myRef.child("driveID").setValue(driveData);
+
 
 
 
@@ -469,9 +533,9 @@ private TextureView textureView;
     }
 
     private void playAlertSound() {
-//        if (mediaPlayer == null) {
-//            mediaPlayer = MediaPlayer.create(this, R.raw.driveaide_alert);
-//        }
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer.create(this, R.raw.driveaide_alert);
+        }
 
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.start();
@@ -519,9 +583,12 @@ private TextureView textureView;
                 }
                 if (model.equals("gaze_on_road-not_looking_road") && val >= DISTRACTION_THRESHOLD) {
                     Log.d("!!!!!!!!!", String.valueOf(reses.get("gaze_on_road-not_looking_road")));
-//                    showAlertAndSound();
+                    showAlertAndSound();
                 }
             }
         }
     }
+
+
+}
 
