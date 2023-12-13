@@ -31,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -38,6 +39,8 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ImageView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -46,6 +49,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.Vector;
 import android.content.Intent;
 import android.widget.EditText;
@@ -58,6 +62,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -106,6 +111,7 @@ public class CameraActivity extends AppCompatActivity {
     private static final String MODEL_E = "model E";
     private MediaPlayer mediaPlayer; // to play sound
     private Button btnEndDrive; // button that ends drive
+    private boolean isDriveActive = true;
 
     private Map<String, Float> model_results = null;
 
@@ -114,6 +120,8 @@ public class CameraActivity extends AppCompatActivity {
     private int degrees = 0;
     private Location location;
     private DatabaseReference myRef;
+
+    private int currentDriveNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,6 +144,7 @@ public class CameraActivity extends AppCompatActivity {
         btnEndDrive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                isDriveActive = false;
                 endDrive(view);
             }
         });
@@ -216,12 +225,45 @@ public class CameraActivity extends AppCompatActivity {
         locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 // Add location to locations list
+                Log.d("LocationUpdate", "Location: " + location.getLatitude() + ", " + location.getLongitude());
+                CameraActivity.this.location = location;
                 locations.add(new LatLng(location.getLatitude(), location.getLongitude()));
             }
         };
 
         // Request location updates
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+
+        fetchAndIncrementDriveNumber();
+
+        // Request permission from users
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted, request it
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1657);
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted, request it
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1658);
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted, request it
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.INTERNET}, 1659);
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted, request it
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_NETWORK_STATE}, 1660);
+        }
 
     }
 
@@ -482,6 +524,10 @@ public class CameraActivity extends AppCompatActivity {
     private final Runnable updateTextViewRunnable = new Runnable() {
         @Override
         public void run() {
+            if (!isDriveActive) {
+                return; // Stop the runnable if logging is not active
+            }
+
             // update the list used in the recyclerview
             CameraActivity.this.updateList();
 
@@ -552,37 +598,78 @@ public class CameraActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // searches through a HashMap and returns a list of all pairs with values greater than a certain
-    // threshold.
     private void updateList() {
         mDataList.clear();
+
+        // Generate a timestamp key
+        String timestampKey = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(new Date());
+
+        Map<String, Object> driveData = new HashMap<>();
+        Map<String, Float> drivingEvents = new HashMap<>();
+
+        driveData.put("dateTime", getCurrentFormattedDateTime());
+
+        if (location != null) {
+            driveData.put("latitude", String.valueOf(location.getLatitude()));
+            driveData.put("longitude", String.valueOf(location.getLongitude()));
+        } else {
+            driveData.put("latitude", "N/A");
+            driveData.put("longitude", "N/A");
+        }
+
         if (model_results != null) {
             for (String model : model_results.keySet()) {
-                // access confidence value
                 float val = model_results.get(model);
-                // update the value in the list
-                if (val >= 0) {
-                    mDataList.add(new ItemData(model, String.format("%.6f", val)));
-                }
-                if (val >= DISTRACTION_THRESHOLD) {
-                    Map<String, Integer> drivingEvents = new HashMap<>();
-                    drivingEvents.put(model, (int) val);
+                mDataList.add(new ItemData(model, String.format("%.6f", val)));
 
-                    Map<String, Object> driveData = new HashMap<>();
-                    driveData.put("driveNumber", 1);
-                    driveData.put("dateTime", Calendar.getInstance().getTime());
-                    driveData.put("latitude", location.getLatitude());
-                    driveData.put("longitude", location.getLongitude());
-                    driveData.put("drivingEvents", drivingEvents);
-
-                    myRef.child("driveID").setValue(driveData);
-                }
-                if (model.equals("gaze_on_road-not_looking_road") && val >= DISTRACTION_THRESHOLD) {
-                    showAlertAndSound();
-                }
+                drivingEvents.put(model, val);
             }
         }
+
+        driveData.put("drivingEvents", drivingEvents);
+
+        // Save this data point under the timestamp key
+        myRef.child(String.valueOf(currentDriveNumber)).child(timestampKey).setValue(driveData);
     }
+
+    private String getCurrentFormattedDateTime() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        // Set the timezone to US Central Time
+        sdf.setTimeZone(TimeZone.getTimeZone("America/Chicago"));
+        return sdf.format(new Date());
+    }
+
+    private void fetchAndIncrementDriveNumber() {
+        DatabaseReference drivesRef = FirebaseDatabase.getInstance().getReference("drives");
+        drivesRef.orderByKey().limitToLast(1).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    // Assuming drive numbers are stored as keys
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        try {
+                            int lastDriveNumber = Integer.parseInt(snapshot.getKey());
+                            currentDriveNumber = lastDriveNumber + 1;
+                        } catch (NumberFormatException e) {
+                            Log.e("CameraActivity", "Error parsing drive number: " + e.getMessage());
+                            // Handle error, maybe set a default value for currentDriveNumber
+                        }
+                    }
+                } else {
+                    currentDriveNumber = 1; // Start from 1 if no drives exist
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                // Handle possible errors
+                Log.e("CameraActivity", "Error fetching drive number: " + databaseError.getMessage());
+            }
+        });
+    }
+
+
+
 }
 
 

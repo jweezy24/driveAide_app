@@ -42,11 +42,11 @@
 
     <!-- TextView for displaying statistics -->
     <TextView
-        android:id="@+id/statsTextView"
+        android:id="@+id/driveDurationTextView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:text="Statistics will appear here"
+        android:text=""
         android:textSize="18sp"
         android:textColor="#000000"
         app:layout_constraintTop_toBottomOf="@id/divider0"
@@ -59,22 +59,10 @@
         android:layout_height="1dp"
         android:layout_marginTop="20dp"
         android:background="@color/black"
-        app:layout_constraintTop_toBottomOf="@+id/statsTextView"
+        app:layout_constraintTop_toBottomOf="@+id/driveDurationTextView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- TextView for displaying lifetime statistics -->
-    <TextView
-        android:id="@+id/lifetimeStatsTextView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Lifetime statistics will appear here"
-        android:textSize="18sp"
-        android:textColor="#000000"
-        app:layout_constraintTop_toBottomOf="@id/divider1"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Button for displaying the map -->
     <Button
@@ -88,6 +76,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.503"
         app:layout_constraintStart_toStartOf="parent" />
+
 
     <!-- Button to return to home -->
     <Button
