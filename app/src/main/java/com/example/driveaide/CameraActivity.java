@@ -27,7 +27,6 @@ import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
-import android.widget.Button;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -53,10 +52,14 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -239,6 +242,30 @@ private TextureView textureView;
 
         // Request location updates
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+
+
+        ////////// FIREBASE EXAMPLE CODE ///////////
+
+        // Initialize Firebase Database
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("drives");
+
+        // Prepare your driving events data
+        Map<String, Integer> drivingEvents = new HashMap<>();
+        drivingEvents.put("event1", 95); // replace with actual event IDs and confidence values
+        drivingEvents.put("event2", 88);
+        // ... add other events
+
+        // Prepare your data
+        Map<String, Object> driveData = new HashMap<>();
+        driveData.put("driveNumber", 123); // replace with actual drive number
+        driveData.put("dateTime", "2023-12-05 15:00:00"); // replace with actual date/time
+        driveData.put("latitude", 40.7128); // replace with actual latitude
+        driveData.put("longitude", -74.0060); // replace with actual longitude
+        driveData.put("drivingEvents", drivingEvents);
+
+        // Push data to Firebase Database
+        myRef.child("driveID").setValue(driveData);
 
     }
 
@@ -589,6 +616,16 @@ private TextureView textureView;
         }
     }
 
-
+    // for testing purposes; the true model list will be provided by models
+    private final String[] MODEL_LIST = {
+            "model A",
+            "model B",
+            "model C",
+            "model D",
+            "model E",
+            "model F",
+            "model G"
+    };
+    //*******************************************************************************************
 }
 
