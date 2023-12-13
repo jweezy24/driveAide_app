@@ -55,7 +55,7 @@ public class DriveSummaryActivity extends AppCompatActivity {
             startActivity(new Intent(this, MainActivity.class));
         });
 
-        BarChart barChart = findViewById(R.id.barChart);
+
 
         // Create dataset for the bar chart
         List<BarEntry> entries = new ArrayList<>();
@@ -64,10 +64,6 @@ public class DriveSummaryActivity extends AppCompatActivity {
 
         BarDataSet dataSet = new BarDataSet(entries, "Label"); // Add entries to dataset
         dataSet.setColor(Color.RED); // Optional: customize dataset appearance
-
-        BarData barData = new BarData(dataSet);
-        barChart.setData(barData);
-        barChart.invalidate(); // refresh
 
 
         Spinner dateSpinner = findViewById(R.id.dateSpinner);

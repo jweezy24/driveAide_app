@@ -61,8 +61,8 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("androidx.activity:activity:+")
     implementation("org.tensorflow:tensorflow-lite:+") // Replace with the latest version
-    implementation("org.pytorch:pytorch_android_lite:1.9.0") // Replace with the latest version
-    implementation("org.pytorch:pytorch_android_torchvision:1.9.0") // Replace with the latest version
+//    implementation("org.pytorch:pytorch_android_lite:1.9.0") // Replace with the latest version
+//    implementation("org.pytorch:pytorch_android_torchvision:1.9.0") // Replace with the latest version
     implementation("com.google.android.gms:play-services-maps:17.0.1")  // allows for google maps to be used
     implementation("com.google.android.gms:play-services-location:18.0.0") // This is for location services if needed
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")

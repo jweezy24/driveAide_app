@@ -34,6 +34,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ImageView;
 
@@ -60,6 +61,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,13 +82,13 @@ import java.util.Calendar;
 
 public class CameraActivity extends AppCompatActivity {
 
-private TextureView textureView;
+    private TextureView textureView;
     private CameraDevice cameraDevice;
     private Size previewSize;
     private String cameraId;
     private MLModelWrapper mlModelWrapper;
     private int count = 0;
-    private ImageView iv= null;
+    private ImageView iv = null;
     //Thread lock
     private Object lock = new Object();
     private float[] global_bbox = null;
@@ -96,8 +98,8 @@ private TextureView textureView;
     private List<ItemData> mDataList;               // a list of all distractions
     private List<LatLng> locations;                 // a list of all logged coordinates
     private final Handler recyclerViewHandler = new Handler(Looper.getMainLooper());
-    private final int UPDATE_RECYCLER_VIEW_INTERVAL_MS = 10*1000; // 10 seconds x 1000 ms/1 second
-    private final int UPDATE_INTERVAL_MS = 10*100; // 10 seconds x 1000 ms/1 second
+    private final int UPDATE_RECYCLER_VIEW_INTERVAL_MS = 10 * 100;// 10 seconds x 1000 ms/1 second
+    private final int UPDATE_INTERVAL_MS = 10 * 100; // 10 seconds x 1000 ms/1 second
     private final double DISTRACTION_THRESHOLD = 0.5;       // the threshold to determine distraction
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -109,7 +111,7 @@ private TextureView textureView;
 
     private ArrayList<Bitmap> frame_cache = new ArrayList<>(3);
     private Map<String, Float> reses;
-    private int degrees=0;
+    private int degrees = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,7 +148,6 @@ private TextureView textureView;
         layout.addView(iv);
 
 
-
         mDataMap = new HashMap<>();
         mDataList = new ArrayList<>();
 
@@ -162,7 +163,6 @@ private TextureView textureView;
         layout.addView(confidenceView);
 
 
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 1);
         } else {
@@ -171,7 +171,11 @@ private TextureView textureView;
 
         setContentView(layout);
         AssetManager asstmgr = this.getAssets();
-        mlModelWrapper = new MLModelWrapper(this,asstmgr);
+        try {
+            mlModelWrapper = new MLModelWrapper(this,asstmgr);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
 
         ////////// FIREBASE EXAMPLE CODE ///////////
@@ -223,9 +227,8 @@ private TextureView textureView;
         }
 
         setContentView(layout);
-        AssetManager asstmgr = this.getAssets();
         try {
-            mlModelWrapper = new MLModelWrapper(this,asstmgr);
+            mlModelWrapper = new MLModelWrapper(this, asstmgr);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -242,30 +245,6 @@ private TextureView textureView;
 
         // Request location updates
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-
-
-        ////////// FIREBASE EXAMPLE CODE ///////////
-
-        // Initialize Firebase Database
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference("drives");
-
-        // Prepare your driving events data
-        Map<String, Integer> drivingEvents = new HashMap<>();
-        drivingEvents.put("event1", 95); // replace with actual event IDs and confidence values
-        drivingEvents.put("event2", 88);
-        // ... add other events
-
-        // Prepare your data
-        Map<String, Object> driveData = new HashMap<>();
-        driveData.put("driveNumber", 123); // replace with actual drive number
-        driveData.put("dateTime", "2023-12-05 15:00:00"); // replace with actual date/time
-        driveData.put("latitude", 40.7128); // replace with actual latitude
-        driveData.put("longitude", -74.0060); // replace with actual longitude
-        driveData.put("drivingEvents", drivingEvents);
-
-        // Push data to Firebase Database
-        myRef.child("driveID").setValue(driveData);
 
     }
 
@@ -289,12 +268,12 @@ private TextureView textureView;
 
         @Override
         public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-            if(count%3 == 0) {
-                synchronized (lock){
+            if (count % 3 == 0) {
+                synchronized (lock) {
                     processAndDisplayImage();
                 }
             }
-            count+=1;
+            count += 1;
         }
     };
 
@@ -382,7 +361,7 @@ private TextureView textureView;
 
         // Assuming the box contains [top, left, bottom, right] coordinates
 //        canvas.drawRect(boundingBoxes[1], boundingBoxes[0], boundingBoxes[3], boundingBoxes[2], paint);
-        runOnUiThread(() ->{
+        runOnUiThread(() -> {
             iv.setImageBitmap(mutableBitmap);
         });
         return mutableBitmap;
@@ -403,7 +382,7 @@ private TextureView textureView;
             canvas.drawRect(boundingBoxes[1], boundingBoxes[0], boundingBoxes[3], boundingBoxes[2], paint);
 
             // Set the bitmap as the image for the overlay
-            runOnUiThread (() -> {
+            runOnUiThread(() -> {
                 iv.draw(canvas);
             });
         });
@@ -432,57 +411,57 @@ private TextureView textureView;
         Bitmap bitmap = getBitmapFromTextureView(textureView);
         if (bitmap != null) {
             new Thread(() -> {
-                synchronized (lock){
-                Vector<Box> bb = mlModelWrapper.runTensorFlowLiteInference(bitmap);
+                synchronized (lock) {
+                    Vector<Box> bb = mlModelWrapper.runTensorFlowLiteInference(bitmap);
 
 
-                if (bb.size() > 0) {
-                    float[] boundingBoxes = bb.firstElement().getBbr();
-                    global_bbox = boundingBoxes;
+                    if (bb.size() > 0) {
+                        float[] boundingBoxes = bb.firstElement().getBbr();
+                        global_bbox = boundingBoxes;
 
-                    int x = Math.max((int) boundingBoxes[1], 0);
-                    int y = Math.max((int) boundingBoxes[0], 0);
-                    int width = Math.min((int) (boundingBoxes[3] - boundingBoxes[1]), bitmap.getWidth() - x);
-                    int height = Math.min((int) (boundingBoxes[2] - boundingBoxes[0]), bitmap.getHeight() - y);
+                        int x = Math.max((int) boundingBoxes[1], 0);
+                        int y = Math.max((int) boundingBoxes[0], 0);
+                        int width = Math.min((int) (boundingBoxes[3] - boundingBoxes[1]), bitmap.getWidth() - x);
+                        int height = Math.min((int) (boundingBoxes[2] - boundingBoxes[0]), bitmap.getHeight() - y);
 
-                    // Ensure the width and height are positive
-                    width = Math.max(width, 0);
-                    height = Math.max(height, 0);
+                        // Ensure the width and height are positive
+                        width = Math.max(width, 0);
+                        height = Math.max(height, 0);
 
-                    // Check if the bounding box is within the bitmap dimensions
-                    if (x + width <= bitmap.getWidth() && y + height <= bitmap.getHeight()) {
-                        Bitmap croppedBitmap = null;
-                        try{
-                            croppedBitmap = MyUtil.cropAndResizeBitmap(bitmap, bb.firstElement(), 448);
-                        }catch (Exception e){
-                            croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
-                        }
-
-                        if (this.frame_cache.size() < 3){
-                            this.frame_cache.add(croppedBitmap);
-                        }else if(this.frame_cache.size() == 3){
-                            mlModelWrapper.add_video_to_video_cache(this.frame_cache);
-                            this.frame_cache.clear();
-                        }
-
-                        if(mlModelWrapper.inference_ready()) {
+                        // Check if the bounding box is within the bitmap dimensions
+                        if (x + width <= bitmap.getWidth() && y + height <= bitmap.getHeight()) {
+                            Bitmap croppedBitmap = null;
                             try {
-
-                                reses =  mlModelWrapper.runPyTorchInference();
-                                Log.d("Results",reses.toString());
-                                this.model_results = reses;
-                            }catch (ExecutionException e) {
-                                throw new RuntimeException(e);
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
+                                croppedBitmap = MyUtil.cropAndResizeBitmap(bitmap, bb.firstElement(), 448);
+                            } catch (Exception e) {
+                                croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
                             }
-                        }
-                        logBoundingBoxes(boundingBoxes);
-                        drawBoundingBoxes(croppedBitmap, boundingBoxes);
 
-                        // Now, you can use croppedBitmap for further processing or display
+                            if (this.frame_cache.size() < 3) {
+                                this.frame_cache.add(croppedBitmap);
+                            } else if (this.frame_cache.size() == 3) {
+                                mlModelWrapper.add_video_to_video_cache(this.frame_cache);
+                                this.frame_cache.clear();
+                            }
+
+                            if (mlModelWrapper.inference_ready()) {
+                                try {
+
+                                    reses = mlModelWrapper.runPyTorchInference();
+                                    Log.d("Results", reses.toString());
+                                    this.model_results = reses;
+                                } catch (ExecutionException e) {
+                                    throw new RuntimeException(e);
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                            logBoundingBoxes(boundingBoxes);
+                            drawBoundingBoxes(croppedBitmap, boundingBoxes);
+
+                            // Now, you can use croppedBitmap for further processing or display
+                        }
                     }
-                }
                 }//thread
             }).start();
         }
@@ -600,7 +579,7 @@ private TextureView textureView;
     // threshold.
     private void updateList() {
         mDataList.clear();
-        if(model_results != null){
+        if (model_results != null) {
             for (String model : model_results.keySet()) {
                 // access confidence value
                 float val = model_results.get(model);
@@ -615,17 +594,7 @@ private TextureView textureView;
             }
         }
     }
-
-    // for testing purposes; the true model list will be provided by models
-    private final String[] MODEL_LIST = {
-            "model A",
-            "model B",
-            "model C",
-            "model D",
-            "model E",
-            "model F",
-            "model G"
-    };
-    //*******************************************************************************************
 }
+
+
 
