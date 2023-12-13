@@ -21,7 +21,6 @@
         android:theme="@style/Theme.DriveAide"
         android:largeHeap="true"
         tools:targetApi="34">
-        tools:targetApi="34" >
         <activity
             android:name=".MapActivity"
             android:exported="false"
@@ -45,7 +44,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyADjlF05Twb87d3pV1JtdNWVAaxIRRl06Q" />
+            android:value="AIzaSyCZePxUL34fspPXdQ2QTgwNtuFElfIh8wQ" />
     </application>
 
 </manifest>

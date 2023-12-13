@@ -63,7 +63,7 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite:+") // Replace with the latest version
 //    implementation("org.pytorch:pytorch_android_lite:1.9.0") // Replace with the latest version
 //    implementation("org.pytorch:pytorch_android_torchvision:1.9.0") // Replace with the latest version
-    implementation("com.google.android.gms:play-services-maps:17.0.1")  // allows for google maps to be used
+    implementation("com.google.android.gms:play-services-maps:18.1.0")  // allows for google maps to be used
     implementation("com.google.android.gms:play-services-location:18.0.0") // This is for location services if needed
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation(platform("com.google.firebase:firebase-bom:32.6.0"))
@@ -73,20 +73,6 @@ dependencies {
     implementation("org.pytorch:pytorch_android_lite:1.13.1") // Replace with the latest version
 //    implementation("org.pytorch:pytorch_android:1.9.0") // Replace with the latest version
     implementation("org.pytorch:pytorch_android_torchvision_lite:1.13.1") // Replace with the latest version
-}
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
-//chaquopy {
-////    productFlavors {
-////        //getByName("py310") { version = "3.10" }
-//////        getByName("py311") { version = "3.11" }
-////    }
-//
-//    defaultConfig {
-//        version = "3.8"
-//        pip {
-//            install("numpy")
-//            // "-r"` followed by a requirements filename, relative to the
-//            // project directory:
-////            install("-r", "src/main/python/requirements.txt")
-//        }
-//    }
+}

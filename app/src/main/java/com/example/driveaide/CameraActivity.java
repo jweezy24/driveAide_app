@@ -118,8 +118,10 @@ public class CameraActivity extends AppCompatActivity {
     private ArrayList<Bitmap> frame_cache = new ArrayList<>(3);
     private Map<String, Float> reses;
     private int degrees = 0;
-    private Location location;
+    private Location locationLocal;
     private DatabaseReference myRef;
+
+    private ArrayList<Map<String, Object>> drive_data_cache = new ArrayList<>();
 
     private int currentDriveNumber;
 
@@ -226,7 +228,7 @@ public class CameraActivity extends AppCompatActivity {
             public void onLocationChanged(Location location) {
                 // Add location to locations list
                 Log.d("LocationUpdate", "Location: " + location.getLatitude() + ", " + location.getLongitude());
-                CameraActivity.this.location = location;
+                CameraActivity.this.locationLocal = location;
                 locations.add(new LatLng(location.getLatitude(), location.getLongitude()));
             }
         };
@@ -386,26 +388,6 @@ public class CameraActivity extends AppCompatActivity {
         return mutableBitmap;
     }
 
-    private void drawBoundingBoxesOnTextureView(float[] boundingBoxes) {
-        runOnUiThread(() -> {
-
-            // Create a transparent bitmap
-            Bitmap overlayBitmap = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(overlayBitmap);
-            Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(2f);
-
-            // Draw bounding box
-            canvas.drawRect(boundingBoxes[1], boundingBoxes[0], boundingBoxes[3], boundingBoxes[2], paint);
-
-            // Set the bitmap as the image for the overlay
-            runOnUiThread(() -> {
-                iv.draw(canvas);
-            });
-        });
-    }
 
     private void logBoundingBoxes(float[] boundingBoxes) {
         StringBuilder sb = new StringBuilder();
@@ -595,6 +577,8 @@ public class CameraActivity extends AppCompatActivity {
 
     public void endDrive(View view) {
         Intent intent = new Intent(this, DriveSummaryActivity.class);
+        intent.putExtra("localDriveData", this.drive_data_cache);
+
         startActivity(intent);
     }
 
@@ -609,12 +593,14 @@ public class CameraActivity extends AppCompatActivity {
 
         driveData.put("dateTime", getCurrentFormattedDateTime());
 
-        if (location != null) {
-            driveData.put("latitude", String.valueOf(location.getLatitude()));
-            driveData.put("longitude", String.valueOf(location.getLongitude()));
+        if (locationLocal != null) {
+            driveData.put("latitude", locationLocal.getLatitude());
+            driveData.put("longitude", locationLocal.getLongitude());
+            Log.d("LOCATION", "CAPTURED LOCATION");
+
         } else {
-            driveData.put("latitude", "N/A");
-            driveData.put("longitude", "N/A");
+            driveData.put("latitude", -1000);
+            driveData.put("longitude", -1000);
         }
 
         if (model_results != null) {
@@ -628,8 +614,11 @@ public class CameraActivity extends AppCompatActivity {
 
         driveData.put("drivingEvents", drivingEvents);
 
+        this.drive_data_cache.add(driveData);
+
         // Save this data point under the timestamp key
-        myRef.child(String.valueOf(currentDriveNumber)).child(timestampKey).setValue(driveData);
+        //        myRef.child(String.valueOf(currentDriveNumber)).child(timestampKey).setValue(driveData);
+
     }
 
     private String getCurrentFormattedDateTime() {

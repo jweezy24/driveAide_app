@@ -23,8 +23,14 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -34,15 +40,20 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
     private List<LatLng> locations = new ArrayList<>(); // Dynamic list for locations
     private boolean isMapReady = false; // Flag to track if the map is ready
 
+    private ArrayList<HashMap<String,Object>> driveCache;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
         String driveNumber = getIntent().getStringExtra("driveNumber");
-        if (driveNumber != null) {
-            fetchLocations(driveNumber);
-        }
+        ArrayList<HashMap<String, Object>> arrayList = (ArrayList<HashMap<String, Object>>) getIntent().getSerializableExtra("localDriveCache");
+        driveCache = arrayList;
+
+//        if (driveNumber != null) {
+//            fetchLocations(driveNumber);
+//        }
 
         // fetch the viewDrive button
         Button exitButton = findViewById(R.id.exit_button);
@@ -53,9 +64,49 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
             startActivity(new Intent(this, DriveSummaryActivity.class));
         });
 
+        getLatLongPoints();
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+    }
+
+
+
+    private void getLatLongPoints() {
+        // Iterate through the local cache to find the drive data
+        for (HashMap<String, Object> driveData : driveCache) {
+            double lat = -1000;
+            double lon = -1000;
+
+            // Assuming each entry in the HashMap is a timestamp -> data mapping
+            for (Map.Entry<String, Object> entry : driveData.entrySet()) {
+
+                if (entry.getKey().equals("latitude")) {
+                    double tmp = Double.valueOf(String.valueOf(entry.getValue()));
+                    if(tmp != -1000){
+                        lat = tmp;
+                    }
+
+
+                }
+                if (entry.getKey().equals("longitude")){
+                    double tmp = Double.valueOf(String.valueOf(entry.getValue()));
+                    if(tmp != -1000){
+                        lon = tmp;
+                    }
+                }
+
+
+
+            }
+
+            if(lat != -1000 && lon != -1000){
+                LatLng point = new LatLng(lat,lon);
+                locations.add(point);
+            }
+
+        }
     }
 
     @Override
