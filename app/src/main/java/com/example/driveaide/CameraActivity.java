@@ -112,6 +112,8 @@ public class CameraActivity extends AppCompatActivity {
     private ArrayList<Bitmap> frame_cache = new ArrayList<>(3);
     private Map<String, Float> reses;
     private int degrees = 0;
+    private Location location;
+    private DatabaseReference myRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -177,32 +179,9 @@ public class CameraActivity extends AppCompatActivity {
             throw new RuntimeException(e);
         }
 
-
-        ////////// FIREBASE EXAMPLE CODE ///////////
-
-        // Initialize Firebase Database
+        // instantiating firebase
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference("drives");
-
-        // Prepare your driving events data
-        Map<String, Integer> drivingEvents = new HashMap<>();
-        drivingEvents.put("event1", 95); // replace with actual event IDs and confidence values
-        drivingEvents.put("event2", 88);
-        // ... add other events
-
-        // Prepare your data
-        Map<String, Object> driveData = new HashMap<>();
-        driveData.put("driveNumber", 123); // replace with actual drive number
-        driveData.put("dateTime", "2023-12-05 15:00:00"); // replace with actual date/time
-        driveData.put("latitude", 40.7128); // replace with actual latitude
-        driveData.put("longitude", -74.0060); // replace with actual longitude
-        driveData.put("drivingEvents", drivingEvents);
-
-        // Push data to Firebase Database
-        myRef.child("driveID").setValue(driveData);
-
-
-
+        myRef = database.getReference("drives");
 
         mDataMap = new HashMap<>();
         mDataList = new ArrayList<>();
@@ -217,8 +196,6 @@ public class CameraActivity extends AppCompatActivity {
         confidenceView.setBackgroundColor(Color.RED);
 
         layout.addView(confidenceView);
-
-
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 1);
@@ -587,8 +564,20 @@ public class CameraActivity extends AppCompatActivity {
                 if (val >= 0) {
                     mDataList.add(new ItemData(model, String.format("%.6f", val)));
                 }
+                if (val >= DISTRACTION_THRESHOLD) {
+                    Map<String, Integer> drivingEvents = new HashMap<>();
+                    drivingEvents.put(model, (int) val);
+
+                    Map<String, Object> driveData = new HashMap<>();
+                    driveData.put("driveNumber", 1);
+                    driveData.put("dateTime", Calendar.getInstance().getTime());
+                    driveData.put("latitude", location.getLatitude());
+                    driveData.put("longitude", location.getLongitude());
+                    driveData.put("drivingEvents", drivingEvents);
+
+                    myRef.child("driveID").setValue(driveData);
+                }
                 if (model.equals("gaze_on_road-not_looking_road") && val >= DISTRACTION_THRESHOLD) {
-                    Log.d("!!!!!!!!!", String.valueOf(reses.get("gaze_on_road-not_looking_road")));
                     showAlertAndSound();
                 }
             }
